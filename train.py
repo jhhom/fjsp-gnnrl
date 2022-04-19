@@ -25,7 +25,7 @@ def train():
     current_time = f'{datetime.datetime.now()}'
 
     if config.progress_config.training_mode == TRAINING_SAVE:
-        os.makedirs(os.path.dirname(config.progress_config.path_to_save_progress))
+        os.makedirs(os.path.dirname(config.progress_config.path_to_save_progress), exist_ok=True)
 
     for i in range(data_loaded.shape[0]):
         validation_data.append(data_loaded[i])
@@ -36,7 +36,6 @@ def train():
 
     np.random.seed(200)
 
-    # TODO: change this, instead initialize like this, load from paused
     ppo = PPO(
         lr=config.learning_rate,
         gamma=config.gamma,
@@ -53,19 +52,23 @@ def train():
         num_of_mlp_layers_critic=config.num_of_mlp_layers_critic,
         hidden_dim_critic=config.num_of_hidden_dim_critic
     )
-    if config.progress_config.training_mode == TRAINING_RESUME or config.progress_config.training_mode == TRAINING_SAVE:
-        checkpoint = torch.load(config.progress_config.path_to_save_progress)
-        ppo.policy.load_state_dict(checkpoint['model_state_dict'])
-        ppo.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-
 
     log = []
     validation_log = []
     record = 100_000
+    training_iteration = 0
 
-    # FOR THE NUMBER OF MAX EPISODES
-    # TODO: change this - i_update in range(start, config.max_updates)
-    for i_update in range(config.max_updates):
+    if config.progress_config.training_mode == TRAINING_RESUME:
+        checkpoint = torch.load(f'{config.progress_config.path_to_save_progress}saved.pth')
+        training_log = checkpoint['training_log']
+        validation_log = checkpoint['validation_log']
+        record = checkpoint['best_record']
+        training_iteration = len(checkpoint['training_log'])
+        ppo.policy.load_state_dict(checkpoint['model_state_dict'])
+        ppo.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+
+    for i_update in range(training_iteration, config.max_updates):
         ep_rewards = [0 for _ in range(config.num_of_envs)]
         adj_envs = []
         fea_envs = []
@@ -160,6 +163,9 @@ def train():
                 validation_set=validation_data, 
                 model=ppo.policy,
                 ub_num_of_operations_per_job=config.num_of_operations_ub_per_job).mean()
+
+            print(f'The validation quality is: {validation_result}')
+
             save_progress(
                 training_log=log,
                 validation_log=validation_log,
@@ -167,6 +173,9 @@ def train():
                 record=record,
                 model=ppo
             )
+
+            if validation_result < record:
+                record = validation_result
     
 
 if __name__ == '__main__':

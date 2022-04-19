@@ -37,12 +37,9 @@ class Config:
     num_of_hidden_dim_critic: int
     
     max_updates: int
-
     duration_low: int
     duration_high: int
-
     device: str
-
     progress_config: ProgressConfig
 
 
@@ -90,8 +87,9 @@ config.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 device = torch.device(config.device)
 
-config.progress_config.training_mode = TRAINING_SAVE
-config.progress_config.path_to_save_progress = f'./records/{config.size}/ID_1'
+config.progress_config = ProgressConfig()
+config.progress_config.training_mode = TRAINING_RESUME
+config.progress_config.path_to_save_progress = f'./records/{config.size}/ID_1/'
 
 
 '''

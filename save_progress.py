@@ -8,20 +8,26 @@ def save_progress(training_log, validation_log, validation_result, record, model
 
     validation_log.append(validation_result)
 
-    with open(f'{path}/validation_log.txt') as logfile:
+    saved = {
+        "model_state_dict": model.policy.state_dict(),
+        "optimizer_state_dict": model.optimizer.state_dict(),
+        "validation_log": validation_log,
+        "training_log": training_log,
+        "best_record": record
+    }
+
+    with open(f'{path}/validation_log.txt', 'w') as logfile:
         logfile.write(str(validation_log))
 
-    with open(f'{path}/training_log.txt') as logfile:
+    with open(f'{path}/training_log.txt', 'w') as logfile:
         logfile.write(str(training_log))
 
-    if config.progress_config.training_mode == TRAINING_SAVE or config.progress_config.training_mode == TRAINING_RESUME:
-        torch.save({
-            "model_state_dict": model.policy.state_dict(),
-            "optimizer_state_dict": model.optimizer.state_dict(),
-        }, f'{path}/saved.pth')
-    
     if validation_result < record:
+        saved['best_record'] = validation_result
         torch.save(model.policy.state_dict(), f'{path}/best_weight.pth')
+
+    if config.progress_config.training_mode == TRAINING_SAVE or config.progress_config.training_mode == TRAINING_RESUME:
+        torch.save(saved, f'{path}/saved.pth')
 
 '''
 Notes:
