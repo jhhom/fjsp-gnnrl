@@ -1,12 +1,14 @@
 from agent_utils import select_action
 from fjsp_env.fjsp_env import FJSP
-from params import config, device
+from params import config, device, TRAINING_ONESHOT, TRAINING_RESUME, TRAINING_SAVE
 from ppo import PPO
 from memory import Memory
 from graph_pool import graph_pool_step
+from save_progress import save_progress
 
 from uniform_instance_gen import uniform_instance_gen_with_fixed_num_of_operations
 from validate import validate
+
 
 import torch
 import numpy as np
@@ -22,8 +24,8 @@ def train():
 
     current_time = f'{datetime.datetime.now()}'
 
-    os.makedirs(os.path.dirname(f'./logs/{config.size}/{current_time}/'))
-    os.makedirs(os.path.dirname(f'./weights/{config.size}/{current_time}/'))
+    if config.progress_config.training_mode == TRAINING_SAVE:
+        os.makedirs(os.path.dirname(config.progress_config.path_to_save_progress))
 
     for i in range(data_loaded.shape[0]):
         validation_data.append(data_loaded[i])
@@ -34,6 +36,7 @@ def train():
 
     np.random.seed(200)
 
+    # TODO: change this, instead initialize like this, load from paused
     ppo = PPO(
         lr=config.learning_rate,
         gamma=config.gamma,
@@ -50,12 +53,18 @@ def train():
         num_of_mlp_layers_critic=config.num_of_mlp_layers_critic,
         hidden_dim_critic=config.num_of_hidden_dim_critic
     )
+    if config.progress_config.training_mode == TRAINING_RESUME or config.progress_config.training_mode == TRAINING_SAVE:
+        checkpoint = torch.load(config.progress_config.path_to_save_progress)
+        ppo.policy.load_state_dict(checkpoint['model_state_dict'])
+        ppo.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
 
     log = []
     validation_log = []
     record = 100_000
 
     # FOR THE NUMBER OF MAX EPISODES
+    # TODO: change this - i_update in range(start, config.max_updates)
     for i_update in range(config.max_updates):
         ep_rewards = [0 for _ in range(config.num_of_envs)]
         adj_envs = []
@@ -139,38 +148,25 @@ def train():
         for j in range(config.num_of_envs):
             ep_rewards[j] -= envs[j].positive_rewards
 
-        loss, v_loss = ppo.update(memories, config.num_of_training_operations)
+        _, v_loss = ppo.update(memories, config.num_of_training_operations)
         for memory in memories: memory.clear_memory()
         mean_rewards_all_env = sum(ep_rewards) / len(ep_rewards)
 
         log.append([i_update, mean_rewards_all_env])
-        if (i_update + 1) % 100 == 0:
-            logfile = open(f'./logs/{config.size}/{current_time}/training.txt', 'w')
-            logfile.write(str(log))
-            logfile.close()
-
-        # log resultsP
         print(f'Episode {i_update+1} \t Last reward: {mean_rewards_all_env:.2f} \t Mean V Loss: {v_loss:.8f}')
 
-        # validate and save use mean performance
-        if (i_update+1) % 100 == 0:
+        if (i_update + 1) % 100 == 0:
             validation_result = - validate(
                 validation_set=validation_data, 
                 model=ppo.policy,
                 ub_num_of_operations_per_job=config.num_of_operations_ub_per_job).mean()
-            validation_log.append(validation_result)
-            if validation_result < record:
-            # weights directory
-                torch.save(ppo.policy.state_dict(), f'./weights/{config.size}/{current_time}.pth')
-                record = validation_result
-            
-            print(f'The validation quality is: {validation_result}')
-            validation_logfile = open(
-                f'./logs/{config.size}/{current_time}/validation.txt',
-                'w'
+            save_progress(
+                training_log=log,
+                validation_log=validation_log,
+                validation_result=validation_result,
+                record=record,
+                model=ppo
             )
-            validation_logfile.write(str(validation_log))
-            validation_logfile.close()
     
 
 if __name__ == '__main__':

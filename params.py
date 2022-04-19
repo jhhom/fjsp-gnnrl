@@ -1,6 +1,15 @@
 import torch
 from uniform_instance_gen import DatasetConfig, datasetConfigs
 
+TRAINING_RESUME = 'RESUME'
+TRAINING_SAVE = 'SAVE'
+TRAINING_ONESHOT = 'ONESHOT'
+
+class ProgressConfig:
+    # training mode: TRAINING_RESUME, TRAINING_SAVE, OR TRAINING_ONESHOT
+    training_mode: str
+    path_to_save_progress: str
+
 class Config:
     num_of_envs: int
     size: str
@@ -34,17 +43,20 @@ class Config:
 
     device: str
 
+    progress_config: ProgressConfig
+
+
 
 config = Config()
 
 # just change this
-config.size = 'MK04'
+config.size = 'MK01'
 
 datasetConfig = datasetConfigs[config.size]
 
 config.dataset_config = datasetConfig
 
-config.num_of_envs = 24
+config.num_of_envs = 4
 config.n_j = datasetConfig.num_of_jobs
 config.n_m = datasetConfig.num_of_machines
 config.num_of_operations_ub_per_job = datasetConfig.highest_num_of_operations_per_job
@@ -77,3 +89,32 @@ config.duration_high = datasetConfig.duration_bounds[1]
 config.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 device = torch.device(config.device)
+
+config.progress_config.training_mode = TRAINING_SAVE
+config.progress_config.path_to_save_progress = f'./records/{config.size}/ID_1'
+
+
+'''
+Notes:
+
+The folder name will be MK01 / MK02
+The subfolder name you can determine yourself
+
+
+keep a fixed format
+
+Suggestion:
+
+<Experiment_ID>
+
+Things to save
+
+1. a serialized config object in the folder.
+2. training log
+3. validation log
+4. best_weight
+5. last_weight
+6. last_optimizer_weights
+
+
+'''
