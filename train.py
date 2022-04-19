@@ -107,7 +107,7 @@ def train():
                 for i in range(config.num_of_envs):
                     pi, _ = ppo.policy_old(
                         x=fea_tensor_envs[i],
-                        adj_matrix=adj_tensor_envs[i],
+                        adj_matrix=adj_tensor_envs[i]._indices(),
                         candidate=candidate_tensor_envs[i].unsqueeze(0),
                         mask=mask_tensor_envs[i].unsqueeze(0),
                         graph_pool=graph_pool_step,

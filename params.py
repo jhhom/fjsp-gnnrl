@@ -88,7 +88,7 @@ config.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 device = torch.device(config.device)
 
 config.progress_config = ProgressConfig()
-config.progress_config.training_mode = TRAINING_RESUME
+config.progress_config.training_mode = TRAINING_ONESHOT
 config.progress_config.path_to_save_progress = f'./records/{config.size}/ID_1/'
 
 
