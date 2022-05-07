@@ -1,6 +1,4 @@
-from .insert_operation import calculate_job_and_machine_ready_times_of_action, calculate_legal_positions
-from .get_job_info_from_op_id import get_job_info_from_op_id
-
+from .insert_operation import calculate_job_and_machine_ready_times_of_action
 import numpy as np
 
 def get_candidate_machine_features(
@@ -8,23 +6,23 @@ def get_candidate_machine_features(
     jobs,
     machine_start_times,
     machine_op_ids,
-    last_op_id_of_jobs: list[int],
+    op_id_to_job_info,
     machines_workload: list[int],
     current_makespan: int,
     mask: list[bool],
 ):
-    job_and_job_ops: list[tuple[int, int]] = [get_job_info_from_op_id(i, last_op_id_of_jobs) for i, _ in omega]
+    job_and_job_ops: list[tuple[int, int]] = [op_id_to_job_info[i] for i, _ in omega]
 
     candidate_job_machine_ready_times = [
         calculate_job_and_machine_ready_times_of_action(
-            job_and_job_ops[i][0],
-            job_and_job_ops[i][1],
-            omega[i][1],
-            omega[i][0],
-            jobs,
-            machine_start_times,
-            machine_op_ids,
-            last_op_id_of_jobs,
+            action_job=job_and_job_ops[i][0],
+            action_op=job_and_job_ops[i][1],
+            action_machine=omega[i][1],
+            action_op_id=omega[i][0],
+            jobs=jobs,
+            machine_start_times=machine_start_times,
+            machine_op_ids=machine_op_ids,
+            op_id_to_job_info=op_id_to_job_info,
         ) for i in range(len(omega))
     ]
 
@@ -34,7 +32,7 @@ def get_candidate_machine_features(
             mask,
             omega,
             candidate_job_machine_ready_times,
-            last_op_id_of_jobs,
+            op_id_to_job_info,
             machine_start_times,
             machine_op_ids,
             jobs
@@ -56,7 +54,7 @@ def calculate_job_wait_times(
     mask,
     omega,
     candidate_job_machine_ready_times,
-    last_op_id_of_jobs,
+    op_id_to_job_info,
     machine_start_times,
     machine_op_ids,
     jobs
@@ -79,7 +77,7 @@ def calculate_job_wait_times(
                 start_times_of_possible_positions = machine_start_times[action_machine][possible_positions]
 
                 op_ids_of_possible_positions = machine_op_ids[action_machine][possible_positions]
-                operations_of_possible_positions = [get_job_info_from_op_id(i, last_op_id_of_jobs) for i in op_ids_of_possible_positions]
+                operations_of_possible_positions = [op_id_to_job_info[int(i)] for i in op_ids_of_possible_positions]
                 durations_of_possible_positions = [
                     jobs[x[0]][x[1]][action_machine] for x in operations_of_possible_positions
                 ]
@@ -87,7 +85,7 @@ def calculate_job_wait_times(
                     start_time_earliest = max(job_ready_time, 0)
                 else:
                     op_id_of_earlist_position = machine_op_ids[action_machine][possible_positions[0] - 1]
-                    earliest_job, earliest_op = get_job_info_from_op_id(op_id_of_earlist_position, last_op_id_of_jobs)
+                    earliest_job, earliest_op = op_id_to_job_info[int(op_id_of_earlist_position)]
                     # we need to get duration for last action on action_machine
                     start_time_earliest = max(
                         job_ready_time,
@@ -95,7 +93,7 @@ def calculate_job_wait_times(
                     )
                 end_times_for_possible_pos = np.append(start_time_earliest, (start_times_of_possible_positions + durations_of_possible_positions))[:-1]
                 possible_gaps = start_times_of_possible_positions - end_times_for_possible_pos
-                action_job, action_op = get_job_info_from_op_id(omega[i][0], last_op_id_of_jobs)
+                action_job, action_op = op_id_to_job_info[omega[i][0]]
                 action_duration = jobs[action_job][action_op][action_machine]
                 idx_legal_pos = np.where(action_duration <= possible_gaps)[0]
                 legal_pos = np.take(possible_positions, idx_legal_pos)

@@ -1,6 +1,5 @@
 import numpy as np
 
-from .get_job_info_from_op_id import get_job_info_from_op_id
 from .params import params
 
 def insert_operation(
@@ -13,9 +12,10 @@ def insert_operation(
     machine_start_times,
     machine_op_ids,
     last_op_id_of_jobs,
+    op_id_to_job_info,
 ):
     action_job_ready_time, action_machine_ready_time = calculate_job_and_machine_ready_times_of_action(
-        action_job, action_op, action_machine, action_op_id, jobs=jobs, machine_start_times=machine_start_times, machine_op_ids=machine_op_ids, last_op_id_of_jobs=last_op_id_of_jobs
+        action_job, action_op, action_machine, action_op_id, jobs=jobs, machine_start_times=machine_start_times, machine_op_ids=machine_op_ids, op_id_to_job_info=op_id_to_job_info
     )
     start_times_for_machine_of_action = machine_start_times[action_machine]
     action_machine_op_ids = machine_op_ids[action_machine]
@@ -39,7 +39,8 @@ def insert_operation(
             possible_positions=possible_positions,
             start_times_for_action_machine=start_times_for_machine_of_action,
             action_machine_op_ids=action_machine_op_ids,
-            last_op_id_of_jobs=last_op_id_of_jobs
+            last_op_id_of_jobs=last_op_id_of_jobs,
+            op_id_to_job_info=op_id_to_job_info,
         )
         if len(legal_pos) == 0:
             action_start_time = put_in_the_end(
@@ -63,14 +64,13 @@ def insert_operation(
 
 
 def calculate_job_and_machine_ready_times_of_action(
-    action_job,
     action_op,
     action_machine,
     action_op_id,
     jobs,
     machine_start_times,
     machine_op_ids,
-    last_op_id_of_jobs,
+    op_id_to_job_info,
 ):
     '''
     jobs matrix
@@ -92,7 +92,7 @@ def calculate_job_and_machine_ready_times_of_action(
     action_machine_ready_time = 0
 
     if preceding_job_op_id is not None:
-        preceding_job, preceding_job_op = get_job_info_from_op_id(preceding_job_op_id, last_op_id_of_jobs)
+        preceding_job, preceding_job_op = op_id_to_job_info[int(preceding_job_op_id)]
         machine_of_preceding_job_op_index = np.column_stack(np.where(machine_op_ids == preceding_job_op_id))[0]
         machine_of_preceding_job_op = machine_of_preceding_job_op_index[0]
         position_of_preceding_job_op_in_machine = machine_of_preceding_job_op_index[1]
@@ -103,7 +103,7 @@ def calculate_job_and_machine_ready_times_of_action(
         ).item()
     
     if preceding_machine_op_id is not None:
-        preceding_machine_job, preceding_machine_op = get_job_info_from_op_id(preceding_machine_op_id, last_op_id_of_jobs)
+        preceding_machine_job, preceding_machine_op = op_id_to_job_info[int(preceding_machine_op_id)]
         duration_of_preceding_machine_op = jobs[preceding_machine_job][preceding_machine_op][action_machine]
         order_of_preceding_machine_op = np.where(np.isclose(machine_op_ids[action_machine], preceding_machine_op_id))
 
@@ -123,7 +123,7 @@ def calculate_legal_positions(
     possible_positions,
     start_times_for_action_machine,
     action_machine_op_ids,
-    last_op_id_of_jobs,
+    op_id_to_job_info,
 ):
     start_times_of_possible_positions = start_times_for_action_machine[possible_positions]
     '''
@@ -132,7 +132,9 @@ def calculate_legal_positions(
     2. Then use that to get the duration from jobs matrices
     '''
     op_ids_of_possible_positions = action_machine_op_ids[possible_positions]
-    operations_of_possible_positions = [get_job_info_from_op_id(i, last_op_id_of_jobs) for i in op_ids_of_possible_positions]
+    operations_of_possible_positions = [
+        op_id_to_job_info[int(i)] for i in op_ids_of_possible_positions
+    ]
     durations_of_possible_positions = [
         jobs[x[0]][x[1]][action_machine] for x in operations_of_possible_positions
     ]
@@ -140,7 +142,7 @@ def calculate_legal_positions(
         start_time_earliest = max(action_job_ready_time, 0)
     else:
         op_id_of_earlist_position = action_machine_op_ids[possible_positions[0] - 1]
-        earliest_job, earliest_op = get_job_info_from_op_id(op_id_of_earlist_position, last_op_id_of_jobs)
+        earliest_job, earliest_op = op_id_to_job_info[int(op_id_of_earlist_position)]
         # we need to get duration for last action on action_machine
         start_time_earliest = max(
             action_job_ready_time,

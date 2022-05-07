@@ -30,6 +30,7 @@ class FJSP(gym.Env):
 
         self.partial_solution_sequence = None
         self.dispatched_operation = None
+        self.op_id_to_job_info = None
         self.left_shifted_flags = []
         self.positive_rewards = []
 
@@ -57,10 +58,12 @@ class FJSP(gym.Env):
         return len(self.partial_solution_sequence) == self.num_of_operations
     
     def step(self, action):
-        if action[0] not in self.dispatched_operation:
+        row, col = self.op_id_to_job_info[action[0]]
+        is_legal_machine = self.jobs[row][col][action[1]] > 0
+        if action[0] not in self.dispatched_operation and is_legal_machine:
             self.step_count += 1
 
-            action_job, action_op = get_job_info_from_op_id(action[0], self.last_op_id_of_jobs)
+            action_job, action_op = self.op_id_to_job_info[action[0]]
             action_machine = action[1]
             action_op_id = action[0]
 
@@ -79,6 +82,7 @@ class FJSP(gym.Env):
                 machine_start_times=self.machine_start_times,
                 machine_op_ids=self.machine_op_ids,
                 last_op_id_of_jobs=self.last_op_id_of_jobs,
+                op_id_to_job_info=self.op_id_to_job_info,
             )
 
             self.left_shifted_flags.append(is_left_shifted)
@@ -132,7 +136,14 @@ class FJSP(gym.Env):
         self.max_end_time = self.lower_bounds.max()
 
         machine_features = get_candidate_machine_features(
-            self.omega, self.jobs, self.machine_start_times, self.machine_op_ids, self.last_op_id_of_jobs, self.machine_workload, self.operation_end_times.max(), self.mask
+            omega=self.omega,
+            jobs=self.jobs,
+            machine_start_times=self.machine_start_times,
+            machine_op_ids=self.machine_op_ids,
+            machines_workload=self.machine_workload,
+            current_makespan=self.operation_end_times.max(),
+            mask=self.mask,
+            op_id_to_job_info=self.op_id_to_job_info,
         )
 
         return np.array(self.adj_matrix, dtype=np.int32), feature, reward, self.done(), self.omega, self.mask, machine_features
@@ -157,6 +168,11 @@ class FJSP(gym.Env):
         self.dispatched_operation = []
         self.left_shifted_flags = []
         self.positive_rewards = 0
+        self.op_id_to_job_info = [
+            get_job_info_from_op_id(i, self.last_op_id_of_jobs)
+            for i in range(self.last_op_id_of_jobs[-1] + 1)
+        ]
+        self.op_id_to_job_info = np.array(self.op_id_to_job_info, dtype=np.int32)
 
         machine_info_matrix_shape = (self.number_of_jobs, ub_num_of_operations_per_job * self.number_of_jobs)
         self.machine_start_times = -params['duration_ub'] * \
@@ -178,7 +194,7 @@ class FJSP(gym.Env):
         self.mask = np.full(shape=(len(self.omega)), fill_value=0, dtype=bool)
 
         for i in range(len(self.omega)):
-            job, op = get_job_info_from_op_id(self.omega[i][0], last_op_id_of_jobs=self.last_op_id_of_jobs)
+            job, op = self.op_id_to_job_info[self.omega[i][0]]
             if self.jobs[job][op][self.omega[i][1]] == 0:
                 self.mask[i] = 1
 
@@ -206,7 +222,14 @@ class FJSP(gym.Env):
             ))
         
         machine_features = get_candidate_machine_features(
-            self.omega, self.jobs, self.machine_start_times, self.machine_op_ids, self.last_op_id_of_jobs, self.machine_workload, self.operation_end_times.max(), self.mask
+            omega=self.omega,
+            jobs=self.jobs,
+            machine_start_times=self.machine_start_times,
+            machine_op_ids=self.machine_op_ids,
+            machines_workload=self.machine_workload,
+            current_makespan=self.operation_end_times.max(),
+            mask=self.mask,
+            op_id_to_job_info=self.op_id_to_job_info,
         )
         
         return np.array(self.adj_matrix, np.int64), feature, self.omega, self.mask, machine_features
