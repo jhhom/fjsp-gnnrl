@@ -283,7 +283,7 @@ if __name__ == '__main__':
                 num_of_jobs=config.num_of_jobs,
                 num_of_machines=config.num_of_machines,
                 num_of_operations_to_num_of_jobs=config.num_of_operations_to_num_of_jobs
-            )    
+            ) for _ in range(12)
         ]
         problems = np.array(problems, dtype=np.int32)
-        # np.save(f'./validation/{size}_validation_set_4', problems)
+        np.save(f'./validation/{size}_validation_set_4', problems)
