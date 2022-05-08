@@ -15,7 +15,7 @@ def insert_operation(
     op_id_to_job_info,
 ):
     action_job_ready_time, action_machine_ready_time = calculate_job_and_machine_ready_times_of_action(
-        action_job, action_op, action_machine, action_op_id, jobs=jobs, machine_start_times=machine_start_times, machine_op_ids=machine_op_ids, op_id_to_job_info=op_id_to_job_info
+        action_op, action_machine, action_op_id, jobs=jobs, machine_start_times=machine_start_times, machine_op_ids=machine_op_ids, op_id_to_job_info=op_id_to_job_info
     )
     start_times_for_machine_of_action = machine_start_times[action_machine]
     action_machine_op_ids = machine_op_ids[action_machine]
@@ -39,7 +39,6 @@ def insert_operation(
             possible_positions=possible_positions,
             start_times_for_action_machine=start_times_for_machine_of_action,
             action_machine_op_ids=action_machine_op_ids,
-            last_op_id_of_jobs=last_op_id_of_jobs,
             op_id_to_job_info=op_id_to_job_info,
         )
         if len(legal_pos) == 0:

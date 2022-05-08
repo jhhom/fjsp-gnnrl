@@ -66,7 +66,7 @@ class PPO:
         self.lr_decay_flag = False
 
     
-    def update(self, memories: list[Memory], n_operations):
+    def update(self, memories: 'list[Memory]', n_operations):
         # array of minibatches over all environments
         # each minibatch contains the feature at the timestep for all environment
         # for example: Minibatch for action may contains actions at time step 2 for all environments

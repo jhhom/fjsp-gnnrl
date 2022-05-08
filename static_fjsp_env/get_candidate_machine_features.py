@@ -2,16 +2,16 @@ from .insert_operation import calculate_job_and_machine_ready_times_of_action
 import numpy as np
 
 def get_candidate_machine_features(
-    omega: list[tuple[int, int]],
+    omega: 'list[tuple[int, int]]',
     jobs,
     machine_start_times,
     machine_op_ids,
     op_id_to_job_info,
-    machines_workload: list[int],
+    machines_workload: 'list[int]',
     current_makespan: int,
-    mask: list[bool],
+    mask: 'list[bool]',
 ):
-    job_and_job_ops: list[tuple[int, int]] = [op_id_to_job_info[i] for i, _ in omega]
+    job_and_job_ops: 'list[tuple[int, int]]' = [op_id_to_job_info[i] for i, _ in omega]
 
     candidate_job_machine_ready_times = [
         calculate_job_and_machine_ready_times_of_action(
