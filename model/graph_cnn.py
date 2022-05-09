@@ -29,14 +29,28 @@ class GraphCNN(nn.Module):
         self.use_learn_epsilon = use_learn_epsilon
 
         # List of MLPs
-        self.gin = GIN(input_dim, hidden_dim, self.num_of_layers, hidden_dim)
+        self.mlps = torch.nn.ModuleList()
+        # self.gin = GIN(input_dim, hidden_dim, self.num_of_layers, hidden_dim)
 
+        # List of batch norms apllied to output of MLP
+        # input of the final prediction linear layer
+        self.batch_norms = torch.nn.ModuleList()
+        for layer in range(self.num_of_layers-1):
+            if layer == 0:
+                self.mlps.append(MLP(num_of_mlp_layers, input_dim, hidden_dim, hidden_dim))
+            else:
+                self.mlps.append(MLP(num_of_mlp_layers, hidden_dim, hidden_dim, hidden_dim))
+
+            self.batch_norms.append(nn.BatchNorm1d(hidden_dim))
 
 
     def forward(self, x, adj_matrix, graph_pool):
         h = x
 
-        h = self.gin(h, adj_matrix)
+        # h = self.gin(x, adj_matrix)
+
+        for layer in range(self.num_of_layers-1):
+            h = self.next_layer(h, layer, adj_matrix=adj_matrix)
 
         h_nodes = h.clone()
         

@@ -126,7 +126,7 @@ class PPO:
             for i in range(len(memories)):
                 pis, vals = self.policy(
                     x=all_env_mb_features[i],
-                    adj_matrix=all_env_mb_adj_matrices[i]._indices(),
+                    adj_matrix=all_env_mb_adj_matrices[i],
                     candidate=all_env_mb_candidate_features[i],
                     mask=all_env_mb_masks[i],
                     graph_pool=graph_pool_mb,

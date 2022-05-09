@@ -146,7 +146,7 @@ class FJSP(gym.Env):
             op_id_to_job_info=self.op_id_to_job_info,
         )
 
-        return np.array(self.adj_matrix, dtype=np.int32), feature, reward, self.done(), self.omega, self.mask, machine_features
+        return self.adj_matrix, feature, reward, self.done(), self.omega, self.mask, machine_features
 
 
     def reset(self, data, ub_num_of_operations_per_job):
@@ -232,7 +232,7 @@ class FJSP(gym.Env):
             op_id_to_job_info=self.op_id_to_job_info,
         )
         
-        return np.array(self.adj_matrix, np.int64), feature, self.omega, self.mask, machine_features
+        return self.adj_matrix, feature, self.omega, self.mask, machine_features
 
 
     def get_number_of_ops_for_every_job(self, job_matrix):
