@@ -1,6 +1,6 @@
 from agent_utils import select_action
 from fjsp_env.fjsp_env import FJSP
-from params import config, device, TRAINING_ONESHOT, TRAINING_RESUME, TRAINING_SAVE
+from params import config, device
 from ppo import PPO
 from memory import Memory
 from graph_pool import graph_pool_step
@@ -22,10 +22,17 @@ def train():
     data_loaded = np.load(f'./validation/{config.size}_validation_set_4.npy')
     validation_data = []
 
-    current_time = f'{datetime.datetime.now()}'
+    # current_time = f'{datetime.datetime.now()}'
 
-    if config.progress_config.training_mode == TRAINING_SAVE:
-        os.makedirs(os.path.dirname(config.progress_config.path_to_save_progress), exist_ok=True)
+    if config.progress_config.save_training:
+        if not os.path.isdir(config.progress_config.path_to_save_progress):
+            os.makedirs(os.path.dirname(f'{config.progress_config.path_to_save_progress}/'), exist_ok=True)
+    elif os.path.isdir(config.progress_config.path_to_save_progress):
+        if len(os.listdir(f'{config.progress_config.path_to_save_progress}/')) != 0:
+            print(f"ERROR: {os.path.dirname(config.progress_config.path_to_save_progress)} is not empty")
+            quit()
+    else:
+        os.makedirs(os.path.dirname(f'{config.progress_config.path_to_save_progress}/'), exist_ok=True)
 
     for i in range(data_loaded.shape[0]):
         validation_data.append(data_loaded[i])
@@ -53,19 +60,20 @@ def train():
         hidden_dim_critic=config.num_of_hidden_dim_critic
     )
 
-    log = []
+    training_log = []
     validation_log = []
     record = 100_000
     training_iteration = 0
 
-    if config.progress_config.training_mode == TRAINING_RESUME:
-        checkpoint = torch.load(f'{config.progress_config.path_to_save_progress}saved.pth')
-        training_log = checkpoint['training_log']
-        validation_log = checkpoint['validation_log']
-        record = checkpoint['best_record']
-        training_iteration = len(checkpoint['training_log'])
-        ppo.policy.load_state_dict(checkpoint['model_state_dict'])
-        ppo.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    if config.progress_config.save_training:
+        if len(os.listdir(config.progress_config.path_to_save_progress)) != 0:
+            checkpoint = torch.load(f'{config.progress_config.path_to_save_progress}/saved.pth')
+            training_log = checkpoint['training_log']
+            validation_log = checkpoint['validation_log']
+            record = checkpoint['best_record']
+            training_iteration = len(checkpoint['training_log'])
+            ppo.policy.load_state_dict(checkpoint['model_state_dict'])
+            ppo.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
 
     for i_update in range(training_iteration, config.max_updates):
@@ -155,7 +163,7 @@ def train():
         for memory in memories: memory.clear_memory()
         mean_rewards_all_env = sum(ep_rewards) / len(ep_rewards)
 
-        log.append([i_update, mean_rewards_all_env])
+        training_log.append([i_update, mean_rewards_all_env])
         print(f'Episode {i_update+1} \t Last reward: {mean_rewards_all_env:.2f} \t Mean V Loss: {v_loss:.8f}')
 
         if (i_update + 1) % 100 == 0:
@@ -167,7 +175,7 @@ def train():
             print(f'The validation quality is: {validation_result}')
 
             save_progress(
-                training_log=log,
+                training_log=training_log,
                 validation_log=validation_log,
                 validation_result=validation_result,
                 record=record,

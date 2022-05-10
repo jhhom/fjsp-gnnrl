@@ -1,7 +1,7 @@
 import torch
 
 from ppo import PPO
-from params import config, TRAINING_ONESHOT, TRAINING_RESUME, TRAINING_SAVE
+from params import config
 
 def save_progress(training_log, validation_log, validation_result, record, model: PPO):
     path = config.progress_config.path_to_save_progress
@@ -26,7 +26,7 @@ def save_progress(training_log, validation_log, validation_result, record, model
         saved['best_record'] = validation_result
         torch.save(model.policy.state_dict(), f'{path}/best_weight.pth')
 
-    if config.progress_config.training_mode == TRAINING_SAVE or config.progress_config.training_mode == TRAINING_RESUME:
+    if config.progress_config.save_training:
         torch.save(saved, f'{path}/saved.pth')
 
 '''

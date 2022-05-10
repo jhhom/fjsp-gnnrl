@@ -32,3 +32,29 @@ datasetConfigs = {
 }
 ```
 
+# Choosing the file to save training progress
+Steps:
+
+1. In `params.py`, change the "ID_1" part of this line. It can be "ID_2" or "ID_3", or any "ID_<any number you like>".
+    ```python
+    config.progress_config.path_to_save_progress = f'./records/{config.size}/ID_1'
+    ```
+2. Run `train.py`
+
+The convention of folder naming system is `records/<PROBLEM_SIZE>/ID_<ANY_NUMBER>`
+
+
+The folder will store:
+
+* Validation log
+* Training log
+* Best weight
+
+In saved mode, the folder will additionally store:
+
+
+
+
+
+
+
