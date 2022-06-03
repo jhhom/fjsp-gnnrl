@@ -1,163 +1,149 @@
-Action: Dispatch Job 1, Operation 2 on Machine 2 (Duration = 2)
+Operation end time lowerbound is used for:
 
-Jobs
-```
-1 3 2    0 0 2    2 1 0    
-0 2 1    2 2 1    1 0 1    
-0 0 3    0 0 0    3 0 0
-```
+* Node features
+* Reward calculation
 
-Job Makespans
+## How to calculate operation end time lowerbound?
+Let's say that we the following FJSP problem.
+
+Note: 0 means alternative is not available.
+
+**Job 1**
+
+| Operation / Alternatives | Machine 1 | Machine 2 | Machine 3 |
+|--|----|----|----|
+| Operation 1 | 1 | 3 | 2 |
+| Operation 2 | 0 | 2 | 1 |
+| Operation 3 | 0 | 0 | 3 |
+
+
+**Job 2**
+
+| Operation / Alternatives | Machine 1 | Machine 2 | Machine 3 |
+|--|----|----|----|
+| Operation 1 | 0 | 0 | 2 |
+| Operation 2 | 2 | 2 | 1 |
+
+**Job 3**
+
+| Operation / Alternatives | Machine 1 | Machine 2 | Machine 3 |
+|--|----|----|----|
+| Operation 1 | 2 | 1 | 0 |
+| Operation 2 | 1 | 0 | 1 |
+| Operation 3 | 3 | 0 | 0 |
+
+Given we have following partial schedule.
+
+![](./images/schedule-initial.jpg)
+
+**Figure 1: Current partial schedule**
+
+We have dispatched Operation 1 of Job 1 on Machine 3.
+
+Our `job_makespans` 3D array should be as follows:
+
 ```
 2 2 2    0 0 2    2 1 0    
 0 2 1    2 2 1    1 0 1    
 0 0 3    0 0 0    3 0 0
 ```
 
-Result: Operation end times
+
+<details>
+<summary>What is a `job_makespans` array?</summary>
+
+`job_makespans` array is a temporary array used for easy calculation of operation lower bounds.
+
+It is a 3-dimensional array, where each dimension represents the following:
+
+- Matrix: Job
+- Row: Operation
+- Column: Machine alternative
+
+Each element in the array stores different information depending on the operation's status.
+
+- For the last dispatched operation on a job, it store its processing finish time.
+- For operations that are not the last dispatched on a job, it stores a 0 as a placeholder.
+- For undispatched operations, it store its duration.
+
+Example 1 (Dispatched operation): Given the above partial schedule (Figure 1), we have the first row of first array storing the processing finish time of Operation 1 of Job 1, which is 2.
+
+<pre><code><span style="color: red; font-weight: 700;">2 2 2</span>    0 0 2    2 1 0    
+0 2 1    2 2 1    1 0 1    
+0 0 3    0 0 0    3 0 0</code></pre>
+
+
+![](images/schedule-o11-end-time.jpg)
+
+Example 2 (Undispatched operation): Because all operations other than Operation 1 of Job 1 are undispatched, hence the elements in `job_makespan` will only store their duration on the machine alternatives.
+
+<pre><code style="color: red; font-weight: 700;"><span style="color: black; font-weight: 400;">2 2 2</span>    0 0 2    2 1 0    
+0 2 1    2 2 1    1 0 1    
+0 0 3    0 0 0    3 0 0</code></pre>
+
+For instance: The element with index of (0, 1, 1), stores a 2, because Job 1, Operation 2 on Machine 2 has a duration of 2.
+
+<pre><code>2 2 2    0 0 2    2 1 0    
+0 <span style="color:red; font-weight: 700;">2</span> 1    2 2 1    1 0 1    
+0 0 3    0 0 0    3 0 0</code></pre>
+
+On the other hand, the element with index of (0, 1, 0) stores a 0, because Machine 1 is not able to process Operation 2 of Job 1.
+
+<pre><code>2 2 2    0 0 2    2 1 0    
+<span style="color:red; font-weight: 700;">0</span> 2 1    2 2 1    1 0 1    
+0 0 3    0 0 0    3 0 0</code></pre>
+</details>
+
+Our `operation_end_times` 3D array should be as follows:
+
 ```
 2 2 2    0 0 0    0 0 0    
-4 4 4    0 0 0    0 0 0    
+0 0 0    0 0 0    0 0 0    
 0 0 0    0 0 0    0 0 0
 ```
 
-Result: Job Makespans (after)
+<details>
+<summary>What is a `operation_end_times` array?</summary>
+
+`operation_end_times` array simply store the processing finish time for dispatched operations.
+
+It is 3D to allow for easy operations with `job_makespans` array.
+
+For undispatched operations, 0 is used as a placeholder.
+
+Example: Because we have only one dispatched Operation 1 of Job 1 with finish time of 2, hence the first row of first matrix has all values of 2. Whereas other operations are undispatched, hence all other elements are 0.
+</details>
+
+
+### How to update operation lower bounds
+To calculate the new operation lower bounds once we have dispatched an operation, we only need these 2 arrays:
+
+* `job_makespans`
+* `operation_end_times`
+
+With the schedule in Figure 1, both of the arrays should have following values:
+
+`job_makespans`
+
 ```
-0 0 0    0 0 2    2 1 0    
-4 4 4    2 2 1    1 0 1    
+2 2 2    0 0 2    2 1 0    
+0 2 1    2 2 1    1 0 1    
 0 0 3    0 0 0    3 0 0
 ```
 
-Result: Operation lower bounds
+<br>
+
+`operation_end_times`
+
 ```
-2 2 2    0 0 2    2 1 0    
-4 4 4    4 4 3    2 0 2
-0 0 7    0 0 0    5 0 0
+2 2 2    0 0 0    0 0 0    
+0 0 0    0 0 0    0 0 0    
+0 0 0    0 0 0    0 0 0
 ```
 
+**Steps to calculate the new operation lower bounds:**
 
-
-* Line 1: Find the last non-zero:
-    * job = [0]
-    * operation [1]
-  
-    * This means the last non-zero for the first matrix is the second operation (second row of first matrix)
-
-* Line 2: 
-    ```
-    0 0 0    0 0 2    2 1 0    
-    0 0 0    2 2 1    1 0 1    
-    0 0 3    0 0 0    3 0 0
-    ```
-
-    * In Job Makespan matrix, Set all the numbers before and in the last non-zero to zeroes
-
-* Line 3:
-    ```
-    0 0 0    0 0 2    2 1 0    
-    4 4 4    2 2 1    1 0 1    
-    0 0 3    0 0 0    3 0 0
-    ```
-
-    * Set the last non-zeroes to their operation end times
-
-
-* Line 4:
-    ```
-    9999 9999 9999    9999 9999    2       2    1 9999    
-    4    4    4       2    2    1          1 9999    1    
-    9999 9999    3    9999 9999 9999       3 9999 9999
-    ```
-
-    * Set all the zeroes in Job makespans to 9999
-    * The purpose is to exclude 0 from finding the minimum of every row in each matrix
-
-* Line 5: Take the minimum along every row of every matrix
-    ```
-    9999    4    3
-       2    1 9999
-       1    1    3
-    ```
-
-    * Note: Matrix is collapsed to row. Row is collapsed to min element.
-
-* Line 6: Revert all 9999 to 0.
-    ```
-    0    4    3
-    2    1    0
-    1    1    3
-    ```
-
-* Line 7: Perform cumulative sum along every row
-    ```
-    0    4    7    
-    2    3    3    
-    1    2    5
-    ```
-
-* Line 8: Shift the sum by one row
-    ```
-    5    0    4    
-    7    2    3    
-    3    1    2
-    ```
-
-* Line 9: Set first column to 0
-    ```
-    0    0    4    
-    0    2    3    
-    0    1    2
-    ```
-
-* Line 10: Repeat the shifted sum for every matrix
-    ```
-    0    0    0       0    0    0       0    0    0    
-    0    0    0       2    2    2       1    1    1    
-    4    4    4       3    3    3       2    2    2
-    ```
-
-* Line 11: Add the job makespans with the shifted sum
-
-    ```
-    0 0 0    0 0 2    2 1 0    
-    4 4 4    2 2 1    1 0 1    
-    0 0 3    0 0 0    3 0 0
-
-    +
-
-    0 0 0    0 0 0    0 0 0    
-    0 0 0    2 2 2    1 1 1    
-    4 4 4    3 3 3    2 2 2
-
-    =
-
-    0 0 0    0 0 2    2 1 0    
-    4 4 4    4 4 3    2 1 2
-    4 4 7    3 3 3    5 2 2
-    ```
-
-
-* Line 12: Set the non-eligible alternative to 0
-    ```
-    0    0    0       0    0    2       2    1    0    
-    0    4    4       4    4    3       2    0    2    
-    0    0    7       0    0    0       5    0    0
-    ```
-
-* Line 13: Set the indexes where operation end times are not zero to its corresponding element in operation end times
-    * Operation end times
-        ```
-        2    2    2       0    0    0       0    0    0    
-        4    4    4       0    0    0       0    0    0    
-        0    0    0       0    0    0       0    0    0
-        ```
-
-    * Resulting operation lower bound
-        ```
-        2    2    2       0    0    2       2    1    0    
-        4    4    4       4    4    3       2    0    2    
-        0    0    7       0    0    0       5    0    0
-        ```
-
-
+1. Update `operation_end_times`
+2. Update `job_makespans`
+3. Perform cumulative sum along rows of `job_makespans`
 

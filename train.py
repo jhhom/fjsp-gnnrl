@@ -22,8 +22,6 @@ def train():
     data_loaded = np.load(f'./validation/{config.size}_validation_set_4.npy')
     validation_data = []
 
-    # current_time = f'{datetime.datetime.now()}'
-
     if config.progress_config.save_training:
         if not os.path.isdir(config.progress_config.path_to_save_progress):
             os.makedirs(os.path.dirname(f'{config.progress_config.path_to_save_progress}/'), exist_ok=True)
