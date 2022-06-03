@@ -174,7 +174,7 @@ class FJSP(gym.Env):
         ]
         self.op_id_to_job_info = np.array(self.op_id_to_job_info, dtype=np.int32)
 
-        machine_info_matrix_shape = (self.number_of_jobs, ub_num_of_operations_per_job * self.number_of_jobs)
+        machine_info_matrix_shape = (self.num_of_machines, ub_num_of_operations_per_job * self.number_of_jobs)
         self.machine_start_times = -params['duration_ub'] * \
             np.ones(machine_info_matrix_shape)
         self.machine_op_ids = -self.number_of_jobs * \

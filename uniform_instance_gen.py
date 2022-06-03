@@ -9,9 +9,9 @@ class DatasetConfig:
     num_of_machines: int
     highest_num_of_operations_per_job: int
     lowest_num_of_operations_per_job: int
-    num_of_alternative_bounds: tuple[int, int]
-    num_of_operations_to_num_of_jobs: dict[int, int]
-    duration_bounds: tuple[int, int]
+    num_of_alternative_bounds: 'tuple[int, int]'
+    num_of_operations_to_num_of_jobs: 'dict[int, int]'
+    duration_bounds: 'tuple[int, int]'
 
     def get_total_num_of_operations(self):
         sum = 0

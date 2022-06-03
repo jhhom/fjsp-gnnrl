@@ -19,7 +19,7 @@ Example input outputs
     - Input: (5, [2, 5, 7])
     - Output: (1, 0)
 '''
-def get_job_info_from_op_id(op_id: int, last_op_id_of_jobs) -> tuple[int, int]:
+def get_job_info_from_op_id(op_id: int, last_op_id_of_jobs) -> 'tuple[int, int]':
     for i in range(len(last_op_id_of_jobs)):
         if last_op_id_of_jobs[i] >= op_id:
             if i == 0:

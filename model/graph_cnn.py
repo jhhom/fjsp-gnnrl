@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from torch_geometric.nn.models import GIN
-
 from .mlp import MLP
 
 class GraphCNN(nn.Module):
