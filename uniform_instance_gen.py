@@ -276,14 +276,17 @@ def write_dataset_in_brandimarte_format(
 if __name__ == '__main__':
     for size, config in datasetConfigs.items():
         problems = [
-            uniform_instance_gen_with_fixed_num_of_operations(
-                durations_bounds=config.duration_bounds,
-                highest_num_of_operation_per_job=config.highest_num_of_operations_per_job,
-                num_of_alternatives_bounds=config.num_of_alternative_bounds,
+            uniform_instance_gen(
                 num_of_jobs=config.num_of_jobs,
                 num_of_machines=config.num_of_machines,
-                num_of_operations_to_num_of_jobs=config.num_of_operations_to_num_of_jobs
+                lowest_num_of_operation_per_job=config.lowest_num_of_operations_per_job,
+                highest_num_of_operation_per_job=config.highest_num_of_operations_per_job,
+                highest_num_of_alternatives_per_op=config.num_of_alternative_bounds[1],
+                lowest_num_of_alternatives_per_op=config.num_of_alternative_bounds[0],
+                duration_ub=config.duration_bounds[1],
+                duration_lb=config.duration_bounds[0],
             ) for _ in range(12)
         ]
+
         problems = np.array(problems, dtype=np.int32)
         np.save(f'./validation/{size}_validation_set_4', problems)
