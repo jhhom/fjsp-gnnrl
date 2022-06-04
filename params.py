@@ -2,8 +2,6 @@ import torch
 from uniform_instance_gen import DatasetConfig, datasetConfigs
 
 class ProgressConfig:
-    # training mode: TRAINING_RESUME, TRAINING_SAVE, OR TRAINING_ONESHOT
-    training_mode: str
     path_to_save_progress: str
     save_training: bool
 
@@ -47,7 +45,7 @@ class Config:
 config = Config()
 
 # just change this
-config.size = 'MK02'
+config.size = 'MK01'
 
 datasetConfig = datasetConfigs[config.size]
 
@@ -89,7 +87,7 @@ device = torch.device(config.device)
 
 config.progress_config = ProgressConfig()
 config.progress_config.save_training = True
-config.progress_config.path_to_save_progress = f'./records/{config.size}/ID_4'
+config.progress_config.path_to_save_progress = f'./records/{config.size}/ID_2'
 
 config.has_arrival_time = False
 config.arrival_time_multiplier = 5

@@ -54,7 +54,6 @@ class GraphCNN(nn.Module):
         
         # pooling over entire graph
         pooled_h = torch.sparse.mm(graph_pool, h.double())
-
         return pooled_h, h_nodes
 
 

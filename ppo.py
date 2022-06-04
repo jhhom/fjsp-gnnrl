@@ -1,3 +1,4 @@
+from matplotlib.pyplot import get
 import torch
 import torch.nn as nn
 from copy import deepcopy
@@ -118,8 +119,8 @@ class PPO:
                 torch.stack(memories[i].logprobs).to(device).squeeze().detach()
             )
 
-        
-        graph_pool_mb = get_graph_pool_mb(torch.stack(memories[0].adj_mb).to(device).shape)
+
+        graph_pool_mbs = [get_graph_pool_mb(torch.stack(memories[k].adj_mb).to(device).shape, n_operations[k]) for k in range(len(memories))]
         for _ in range(self.k_epochs):
             loss_sum = 0
             v_loss_sum = 0
@@ -129,7 +130,7 @@ class PPO:
                     adj_matrix=all_env_mb_adj_matrices[i],
                     candidate=all_env_mb_candidate_features[i],
                     mask=all_env_mb_masks[i],
-                    graph_pool=graph_pool_mb,
+                    graph_pool=graph_pool_mbs[i],
                     machine_feat=all_env_mb_machine_feats[i],
                 )
                 logprobs, entropy_loss = eval_actions(pis.squeeze(), all_env_mb_actions[i])
