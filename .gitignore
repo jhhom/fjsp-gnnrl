@@ -4,3 +4,4 @@ logs
 weights
 records/**
 .ipynb_checkpoints
+.DS_Store
