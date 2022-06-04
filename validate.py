@@ -14,7 +14,7 @@ def validate(validation_set, model, ub_num_of_operations_per_job):
 
     from fjsp_env.fjsp_env import FJSP
     from agent_utils import greedy_select_action
-    from graph_pool import graph_pool_step
+    from graph_pool import get_graph_pool_step
     from params import device
 
     env = FJSP(n_j=N_JOBS, n_m=N_MACHINES, num_of_operations_ub_per_job=ub_num_of_operations_per_job)
@@ -23,6 +23,7 @@ def validate(validation_set, model, ub_num_of_operations_per_job):
 
     for data in validation_set:
         adj, fea, candidate, mask, machine_feat = env.reset(data, ub_num_of_operations_per_job)
+        graph_pool_step = get_graph_pool_step(env.num_of_operations)
         rewards = -env.initial_quality
         while True:
             fea_tensor = torch.from_numpy(np.copy(fea)).to(device)
