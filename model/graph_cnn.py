@@ -45,8 +45,6 @@ class GraphCNN(nn.Module):
     def forward(self, x, adj_matrix, graph_pool):
         h = x
 
-        # h = self.gin(x, adj_matrix)
-
         for layer in range(self.num_of_layers-1):
             h = self.next_layer(h, layer, adj_matrix=adj_matrix)
 

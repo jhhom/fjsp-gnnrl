@@ -86,17 +86,6 @@ def train():
 
         # INITIALIZE ALL ENVIRONMENTS
         for i, env in enumerate(envs):
-            '''
-            adj, fea, candidate, mask, machine_feat = env.reset(uniform_instance_gen_with_fixed_num_of_operations(
-                num_of_machines=config.n_m,
-                durations_bounds=(config.duration_low, config.duration_high),
-                highest_num_of_operation_per_job=config.num_of_operations_ub_per_job,
-                num_of_alternatives_bounds=(config.num_of_alternatives_lb, config.num_of_alternatives_ub),
-                num_of_jobs=config.n_j,
-                num_of_operations_to_num_of_jobs=config.dataset_config.num_of_operations_to_num_of_jobs
-            ), 
-            config.num_of_operations_ub_per_job)
-            '''
             adj, fea, candidate, mask, machine_feat = env.reset(uniform_instance_gen(
                 num_of_jobs=config.n_j,
                 num_of_machines=config.n_m,
