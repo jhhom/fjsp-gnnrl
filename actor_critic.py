@@ -72,7 +72,7 @@ class ActorCritic(nn.Module):
         candidate_ops = torch.unique(candidate[:, :, 0], dim=1)
         dummy = candidate_ops.unsqueeze(-1).expand(-1, self.n_j, h_nodes.size(-1))
 
-        candidate_feature = torch.gather(h_nodes.reshape(dummy.size(0), -1, dummy.size(-1)), 1, dummy)
+        candidate_feature = torch.gather(h_nodes.reshape(dummy.size(0), -1, dummy.size(-1)), 1, dummy.type(torch.int64))
         candidate_feature = torch.repeat_interleave(candidate_feature, config.n_m, dim=1)
 
         candidate_and_machine_feature = torch.cat((candidate_feature, machine_feat), dim=2)
