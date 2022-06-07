@@ -13,6 +13,7 @@ import copy
 import torch
 import numpy as np
 import datetime
+import time
 import os
 
 def train():
@@ -73,7 +74,7 @@ def train():
             ppo.policy.load_state_dict(checkpoint['model_state_dict'])
             ppo.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
-
+    start_training = time.time()
     for i_update in range(training_iteration, config.max_updates):
         ep_rewards = [0 for _ in range(config.num_of_envs)]
         adj_envs = []
@@ -209,7 +210,20 @@ def train():
 
             if validation_result < record:
                 record = validation_result
-    
+    end_training = time.time()
+
+    with open(f'{config.progress_config.path_to_save_progress}/training_duration.txt', 'w') as logfile:
+        str = f'''Start training
+Timestamp: {datetime.datetime.fromtimestamp(start_training)}
+Time: {start_training}
+
+End training
+Timestamp: {datetime.datetime.fromtimestamp(end_training)}
+Time: {end_training}
+
+Training duration: {end_training - start_training} seconds
+        '''
+        logfile.write(str)
 
 if __name__ == '__main__':
     train()

@@ -79,6 +79,7 @@ config.num_of_hidden_dim_critic = 32
 
 config.max_updates = 10_000
 
+
 config.duration_low = datasetConfig.duration_bounds[0]
 config.duration_high = datasetConfig.duration_bounds[1]
 config.device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -86,7 +87,7 @@ config.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 device = torch.device(config.device)
 
 config.progress_config = ProgressConfig()
-config.progress_config.save_training = True
+config.progress_config.save_training = False
 config.progress_config.path_to_save_progress = f'./records/{config.size}/ID_2'
 
 config.has_arrival_time = False
