@@ -216,7 +216,7 @@ def train():
         training_log.append([i_update, mean_rewards_all_env])
         print(f'Episode {i_update+1} \t Last reward: {mean_rewards_all_env:.2f} \t Mean V Loss: {v_loss:.8f}')
 
-        if (i_update + 1) % 2 == 0:
+        if (i_update + 1) % 100 == 0:
             validation_result = - validate(
                     validation_set=validation_data, 
                     model=ppo.policy,
