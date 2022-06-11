@@ -248,7 +248,7 @@ class StochasticFJSP(gym.Env):
             mask=self.mask,
             op_id_to_job_info=self.op_id_to_job_info,
             release_times=self.job_release_times,
-        ) / params['end_time_normalizing_coefficient']
+        )
         
         return self.adj_matrix, feature, self.omega, self.mask, machine_features
 
