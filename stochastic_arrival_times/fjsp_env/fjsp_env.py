@@ -10,7 +10,7 @@ from .get_candidate_machine_features import get_candidate_machine_features
 
 from .params import params
 
-class FJSP(gym.Env):
+class StochasticFJSP(gym.Env):
     def __init__(self,
         n_j,
         n_m,
@@ -64,6 +64,7 @@ class FJSP(gym.Env):
             self.step_count += 1
 
             action_job, action_op = self.op_id_to_job_info[action[0]]
+            self.job_status_negated[action_job] = False
             action_machine = action[1]
             action_op_id = action[0]
 
@@ -83,6 +84,7 @@ class FJSP(gym.Env):
                 machine_op_ids=self.machine_op_ids,
                 last_op_id_of_jobs=self.last_op_id_of_jobs,
                 op_id_to_job_info=self.op_id_to_job_info,
+                release_times=self.job_release_times
             )
 
             self.left_shifted_flags.append(is_left_shifted)
@@ -102,15 +104,9 @@ class FJSP(gym.Env):
                     self.mask[i] = 1
 
             self.operation_end_times[action_job, action_op, :] = action_start_time + action_duration
-            self.temp_operation_end_times[action_job, action_op, :] = action_start_time + action_duration
-            self.temp_operation_end_times[action_job, action_op, :] = max(
-                self.temp_operation_end_times[action_job, action_op, 0],
-                (action_job+1) * params['arrival_time_multiplier']
-            )
-
             self.machine_workload[action_machine] += action_duration
-            
-            self.lower_bounds = calculate_end_time_lowerbound(self.temp_operation_end_times, self.job_makespans, self.jobs, self.operation_end_times)
+
+            self.lower_bounds = calculate_end_time_lowerbound(self.operation_end_times, self.job_makespans, self.jobs, self.job_status_negated, self.initial_lower_bounds)
 
             # update adjacency matrix
             preceding_op, succeding_op = self.get_action_neighbours(action_op_id, self.machine_op_ids)
@@ -124,7 +120,7 @@ class FJSP(gym.Env):
 
             if is_left_shifted and preceding_op != action_op_id and succeding_op != action_op_id:
                 self.adj_matrix[preceding_op, succeding_op] = 0
-            
+        
         # prepare for return
         lb_features = self.lower_bounds.reshape(-1, self.num_of_machines)
         lb_features = lb_features[~np.all(lb_features == 0, axis=1)]
@@ -150,12 +146,13 @@ class FJSP(gym.Env):
             current_makespan=self.operation_end_times.max(),
             mask=self.mask,
             op_id_to_job_info=self.op_id_to_job_info,
+            release_times=self.job_release_times,
         )
 
-        return np.array(self.adj_matrix, dtype=np.int32), feature, reward, self.done(), self.omega, self.mask, machine_features
+        return self.adj_matrix, feature, reward, self.done(), self.omega, self.mask, machine_features
 
 
-    def reset(self, data, ub_num_of_operations_per_job):
+    def reset(self, data, ub_num_of_operations_per_job, release_times):
         self.step_count = 0
         self.jobs = data
         self.number_of_jobs = data.shape[0]
@@ -179,6 +176,7 @@ class FJSP(gym.Env):
             for i in range(self.last_op_id_of_jobs[-1] + 1)
         ]
         self.op_id_to_job_info = np.array(self.op_id_to_job_info, dtype=np.int32)
+        self.job_status_negated = np.full(self.number_of_jobs, True)
 
         machine_info_matrix_shape = (self.num_of_machines, ub_num_of_operations_per_job * self.number_of_jobs)
         self.machine_start_times = -params['duration_ub'] * \
@@ -189,8 +187,8 @@ class FJSP(gym.Env):
 
         self.job_makespans = np.copy(self.jobs)
         self.operation_end_times = np.zeros(self.jobs.shape)
-        self.temp_operation_end_times = np.zeros(self.jobs.shape)
         self.operations_finish_flags = np.zeros(self.num_of_operations)
+        self.job_release_times = release_times
 
         conj_neighbours = np.eye(self.num_of_operations, k=1, dtype=np.single)
         self_loops = np.eye(self.num_of_operations, dtype=np.single)
@@ -209,6 +207,10 @@ class FJSP(gym.Env):
         temp = np.copy(self.jobs)
         temp[np.where(self.jobs == 0)] = 9999
         min = np.amin(temp, axis=2)
+
+        # add release times
+        min[:, 0] += release_times
+
         min[np.where(min == 9999)] = 0
         min_sum = np.cumsum(min, axis=1)
         shifted_sum = np.roll(min_sum, 1)
@@ -218,15 +220,16 @@ class FJSP(gym.Env):
         lower_bounds[np.where(self.jobs == 0)] = 0
         self.lower_bounds = lower_bounds
 
-        self.lower_bounds = calculate_end_time_lowerbound(
-            self.temp_operation_end_times,
-            self.job_makespans,
-            self.jobs,
-            self.operation_end_times
-        )
-
         self.initial_quality = self.lower_bounds.max() if not params['initial_quality_flag'] else 0
         self.max_end_time = self.initial_quality
+
+        # add release times to first operation's lowerbound
+        for i in range(self.number_of_jobs):
+            mask = self.lower_bounds[i, 0, :] == 0
+            self.lower_bounds[i, 0, :] += release_times[i]
+            self.lower_bounds[i, 0, mask] = 0
+
+        self.initial_lower_bounds = np.copy(self.lower_bounds)
 
         lb_features = self.lower_bounds.reshape(-1, self.num_of_machines)
         lb_features = lb_features[~np.all(lb_features == 0, axis=1)]
@@ -244,14 +247,14 @@ class FJSP(gym.Env):
             current_makespan=self.operation_end_times.max(),
             mask=self.mask,
             op_id_to_job_info=self.op_id_to_job_info,
-        )
+            release_times=self.job_release_times,
+        ) / params['end_time_normalizing_coefficient']
         
-        return np.array(self.adj_matrix, np.int64), feature, self.omega, self.mask, machine_features
+        return self.adj_matrix, feature, self.omega, self.mask, machine_features
 
 
     def get_number_of_ops_for_every_job(self, job_matrix):
         return (job_matrix.max(axis=2) != 0).sum(1)
-
 
 
 

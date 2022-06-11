@@ -1,12 +1,14 @@
+from platform import release
 from agent_utils import select_action
 from fjsp_env.fjsp_env import FJSP
+from stochastic_arrival_times.fjsp_env.stochastic_arrival_times import calculate_problem_release_times
 from params import config, device
 from ppo import PPO
 from memory import Memory
 from graph_pool import get_graph_pool_step
 from save_progress import save_progress
 
-from uniform_instance_gen import uniform_instance_gen, uniform_instance_gen_with_fixed_num_of_operations
+from uniform_instance_gen import uniform_instance_gen
 from validate import validate
 
 import copy
@@ -16,11 +18,24 @@ import datetime
 import time
 import os
 
+if config.stochastic:
+    from stochastic_arrival_times.fjsp_env.fjsp_env import StochasticFJSP
+    FJSP = StochasticFJSP
+
 def train():
     envs = [FJSP(n_j=config.n_j, n_m=config.n_m, num_of_operations_ub_per_job=config.num_of_operations_ub_per_job) for _ in range(config.num_of_envs)]
     memories = [Memory() for _ in range(config.num_of_envs)]
 
-    data_loaded = np.load(f'./validation/{config.size}_validation_set_4.npy')
+    validation_data_path = f'./validation/{config.size}_validation_set_4.npy'
+    if config.stochastic:
+        validation_data_path = f'./stochastic_arrival_times/validation/job_durations/{config.size}_validation_set_4.npy'
+
+
+    data_loaded = np.load(validation_data_path)
+    release_times = None
+    if config.stochastic:
+        release_times = np.loadtxt(f'./stochastic_arrival_times/validation/job_release_times/{config.size}_0.95.txt').astype(np.int32)
+
     validation_data = []
 
     if config.progress_config.save_training:
@@ -87,7 +102,7 @@ def train():
 
         # INITIALIZE ALL ENVIRONMENTS
         for i, env in enumerate(envs):
-            adj, fea, candidate, mask, machine_feat = env.reset(uniform_instance_gen(
+            problem = uniform_instance_gen(
                 num_of_jobs=config.n_j,
                 num_of_machines=config.n_m,
                 lowest_num_of_operation_per_job=config.num_of_operations_lb_per_job,
@@ -96,7 +111,16 @@ def train():
                 highest_num_of_alternatives_per_op=config.num_of_alternatives_ub,
                 duration_lb=config.duration_low,
                 duration_ub=config.duration_high
-            ), config.num_of_operations_ub_per_job)
+            )
+            if config.stochastic:
+                adj, fea, candidate, mask, machine_feat = env.reset(
+                    problem,
+                    config.num_of_operations_ub_per_job,
+                    calculate_problem_release_times(problem, config.machine_utilisation, config.n_j, config.n_m)
+                )
+            else:
+                adj, fea, candidate, mask, machine_feat = env.reset(problem, config.num_of_operations_ub_per_job)
+
             
             adj_envs.append(adj)
             fea_envs.append(fea)
@@ -192,11 +216,12 @@ def train():
         training_log.append([i_update, mean_rewards_all_env])
         print(f'Episode {i_update+1} \t Last reward: {mean_rewards_all_env:.2f} \t Mean V Loss: {v_loss:.8f}')
 
-        if (i_update + 1) % 100 == 0:
+        if (i_update + 1) % 2 == 0:
             validation_result = - validate(
-                validation_set=validation_data, 
-                model=ppo.policy,
-                ub_num_of_operations_per_job=config.num_of_operations_ub_per_job).mean()
+                    validation_set=validation_data, 
+                    model=ppo.policy,
+                    ub_num_of_operations_per_job=config.num_of_operations_ub_per_job,
+                    release_times=release_times).mean()
 
             print(f'The validation quality is: {validation_result}')
 

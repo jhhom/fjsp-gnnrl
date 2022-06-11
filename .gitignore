@@ -3,5 +3,6 @@ __pycache__
 logs
 weights
 records/**
+stochastic_records/**
 .ipynb_checkpoints
 .DS_Store

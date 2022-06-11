@@ -4,7 +4,7 @@ import torch
 
 from ppo import PPO
 
-def validate(validation_set, model, ub_num_of_operations_per_job):
+def validate(validation_set, model, ub_num_of_operations_per_job, release_times):
     N_JOBS = validation_set[0].shape[0]
 
     N_MACHINES = validation_set[0].shape[2]
@@ -17,12 +17,19 @@ def validate(validation_set, model, ub_num_of_operations_per_job):
     from graph_pool import get_graph_pool_step
     from params import device
 
+    if config.stochastic:
+        from stochastic_arrival_times.fjsp_env.fjsp_env import StochasticFJSP
+        FJSP = StochasticFJSP
+
     env = FJSP(n_j=N_JOBS, n_m=N_MACHINES, num_of_operations_ub_per_job=ub_num_of_operations_per_job)
 
     makespans = []
 
-    for data in validation_set:
-        adj, fea, candidate, mask, machine_feat = env.reset(data, ub_num_of_operations_per_job)
+    for i, data in enumerate(validation_set):
+        if config.stochastic:
+            adj, fea, candidate, mask, machine_feat = env.reset(data, ub_num_of_operations_per_job, release_times[i])
+        else:
+            adj, fea, candidate, mask, machine_feat = env.reset(data, ub_num_of_operations_per_job)
         graph_pool_step = get_graph_pool_step(env.num_of_operations)
         rewards = -env.initial_quality
         while True:

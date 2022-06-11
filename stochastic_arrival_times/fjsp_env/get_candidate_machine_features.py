@@ -10,6 +10,7 @@ def get_candidate_machine_features(
     machines_workload: 'list[int]',
     current_makespan: int,
     mask: 'list[bool]',
+    release_times
 ):
     job_and_job_ops: 'list[tuple[int, int]]' = [op_id_to_job_info[i] for i, _ in omega]
 
@@ -22,6 +23,7 @@ def get_candidate_machine_features(
             machine_start_times=machine_start_times,
             machine_op_ids=machine_op_ids,
             op_id_to_job_info=op_id_to_job_info,
+            release_times=release_times
         ) for i in range(len(omega))
     ]
 

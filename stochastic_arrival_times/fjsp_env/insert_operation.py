@@ -13,9 +13,10 @@ def insert_operation(
     machine_op_ids,
     last_op_id_of_jobs,
     op_id_to_job_info,
+    release_times
 ):
     action_job_ready_time, action_machine_ready_time = calculate_job_and_machine_ready_times_of_action(
-        action_op, action_machine, action_op_id, jobs=jobs, machine_start_times=machine_start_times, machine_op_ids=machine_op_ids, op_id_to_job_info=op_id_to_job_info
+        action_op, action_machine, action_op_id, jobs=jobs, machine_start_times=machine_start_times, machine_op_ids=machine_op_ids, op_id_to_job_info=op_id_to_job_info, release_times=release_times
     )
     start_times_for_machine_of_action = machine_start_times[action_machine]
     action_machine_op_ids = machine_op_ids[action_machine]
@@ -70,6 +71,7 @@ def calculate_job_and_machine_ready_times_of_action(
     machine_start_times,
     machine_op_ids,
     op_id_to_job_info,
+    release_times
 ):
     '''
     jobs matrix
@@ -87,7 +89,8 @@ def calculate_job_and_machine_ready_times_of_action(
     else:
         preceding_machine_op_id = None
 
-    action_job_ready_time = 0
+    job, _ = op_id_to_job_info[int(action_op_id)]
+    action_job_ready_time = release_times[job]
     action_machine_ready_time = 0
 
     if preceding_job_op_id is not None:
@@ -96,13 +99,10 @@ def calculate_job_and_machine_ready_times_of_action(
         machine_of_preceding_job_op = machine_of_preceding_job_op_index[0]
         position_of_preceding_job_op_in_machine = machine_of_preceding_job_op_index[1]
         duration_of_preceding_job_op = jobs[preceding_job][preceding_job_op][machine_of_preceding_job_op]
-        previous_op_finish_time = (
+        action_job_ready_time = (
             machine_start_times[machine_of_preceding_job_op][position_of_preceding_job_op_in_machine] + \
             duration_of_preceding_job_op        
         ).item()
-        _, op_order = op_id_to_job_info[action_op_id]
-        op_arrival_time = op_order * params['arrival_time_multiplier']
-        action_job_ready_time = max(op_arrival_time, previous_op_finish_time)
     
     if preceding_machine_op_id is not None:
         preceding_machine_job, preceding_machine_op = op_id_to_job_info[int(preceding_machine_op_id)]
@@ -113,7 +113,7 @@ def calculate_job_and_machine_ready_times_of_action(
             machine_start_times[action_machine][order_of_preceding_machine_op] + \
                 duration_of_preceding_machine_op
         ).item()
-    
+
     return action_job_ready_time, action_machine_ready_time
 
 
