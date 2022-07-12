@@ -56,6 +56,16 @@ def new_model(problem_size, weight_id):
     return ppo.policy
 
 
+def load_benchmark_release_times(problem_size: int):
+    if problem_size > 10 or problem_size < 1:
+        raise Exception('PROBLEM_SIZE must be between 1 and 10')
+
+    release_times = open('./stochastic_arrival_times/brandimarte/MK{:02d}_AR.txt'.format(problem_size)).read().split(' ')
+    release_times = [x.replace('\n', '') for x in release_times]
+    release_times = [int(x) for x in release_times]
+    return release_times
+
+
 if __name__ == '__main__':
     problem_size = 10
     problem = np.load('./evaluations/standard/brandimarte/brandimarte_dataset_numpy/Mk{:02d}.fjs.npy'.format(problem_size))

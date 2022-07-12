@@ -48,7 +48,7 @@ class Config:
 config = Config()
 
 # just change this
-config.size = 'MK05'
+config.size = 'MK01'
 
 datasetConfig = datasetConfigs[config.size]
 
@@ -87,19 +87,17 @@ config.duration_low = datasetConfig.duration_bounds[0]
 config.duration_high = datasetConfig.duration_bounds[1]
 config.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-config.stochastic = True
+config.stochastic = False
 config.machine_utilisation = 0.95
 
 device = torch.device(config.device)
 
 config.progress_config = ProgressConfig()
 config.progress_config.save_training = False
-config.progress_config.path_to_save_progress = f'./records/{config.size}/ID_3'
+config.progress_config.path_to_save_progress = f'./records/{config.size}/ID_5'
 if config.stochastic:
     config.progress_config.path_to_save_progress = f'./stochastic_records/{config.size}/ID_3'
 
-config.has_arrival_time = False
-config.arrival_time_multiplier = 5
 
 
 '''

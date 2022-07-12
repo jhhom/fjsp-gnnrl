@@ -80,6 +80,7 @@ def draw_gantt_chart(
     n_m = len(machine_start_times)
     fig, gnt = plt.subplots()
 
+    fig.set_size_inches(40, 10.5)
     gnt.set_ylim(0, n_m * 10 + 20)
     gnt.set_xlim(0, horizon)
 
@@ -122,6 +123,7 @@ def draw_gantt_chart(
             text_color = colors_used[job][1]
 
             gnt.text(x, y, f"{job+1}{op+1}", ha='center', va='center', color=text_color)
+
     plt.show()
     
 
