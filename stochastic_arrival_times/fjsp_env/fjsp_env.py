@@ -197,6 +197,7 @@ class StochasticFJSP(gym.Env):
             self.adj_matrix[self.last_op_id_of_jobs[i]][self.last_op_id_of_jobs[i] + 1] = 0
         self.omega = [[i, j] for i in self.first_op_id_of_jobs for j in range(self.num_of_machines)]
         self.mask = np.full(shape=(len(self.omega)), fill_value=0, dtype=bool)
+        self.num_of_ops_for_every_job = self.get_number_of_ops_for_every_job(self.jobs)
 
         for i in range(len(self.omega)):
             job, op = self.op_id_to_job_info[self.omega[i][0]]

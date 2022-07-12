@@ -94,7 +94,7 @@ validation_data = np.array([
 ]
 ], dtype=np.int32)
 
-'''x
+'''
 data_loaded = np.load(f'./validation/mk01_validation_set_4.npy')
 validation_data = []
 

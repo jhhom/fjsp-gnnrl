@@ -144,7 +144,7 @@ class FJSP(gym.Env):
             current_makespan=self.operation_end_times.max(),
             mask=self.mask,
             op_id_to_job_info=self.op_id_to_job_info,
-        ) / params['end_time_normalizing_coefficient']
+        ) / params['machine_normalizing_coefficient']
 
         return self.adj_matrix, feature, reward, self.done(), self.omega, self.mask, machine_features
 
@@ -230,7 +230,7 @@ class FJSP(gym.Env):
             current_makespan=self.operation_end_times.max(),
             mask=self.mask,
             op_id_to_job_info=self.op_id_to_job_info,
-        )
+        )  / params['machine_normalizing_coefficient']
         
         return self.adj_matrix, feature, self.omega, self.mask, machine_features
 

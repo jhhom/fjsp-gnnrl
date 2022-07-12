@@ -48,7 +48,7 @@ class Config:
 config = Config()
 
 # just change this
-config.size = 'MK01'
+config.size = 'MK05'
 
 datasetConfig = datasetConfigs[config.size]
 
@@ -94,9 +94,9 @@ device = torch.device(config.device)
 
 config.progress_config = ProgressConfig()
 config.progress_config.save_training = False
-config.progress_config.path_to_save_progress = f'./records/{config.size}/ID_98'
+config.progress_config.path_to_save_progress = f'./records/{config.size}/ID_3'
 if config.stochastic:
-    config.progress_config.path_to_save_progress = f'./stochastic_records/{config.size}/ID_97'
+    config.progress_config.path_to_save_progress = f'./stochastic_records/{config.size}/ID_3'
 
 config.has_arrival_time = False
 config.arrival_time_multiplier = 5

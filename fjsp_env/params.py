@@ -4,4 +4,5 @@ params = {
     'end_time_normalizing_coefficient': 1000,
     'reward_scale': 0,
     'initial_quality_flag': False,
+    'machine_normalizing_coefficient': 100
 }
