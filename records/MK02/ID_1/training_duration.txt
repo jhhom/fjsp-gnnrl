@@ -1,0 +1,10 @@
+Start training
+Timestamp: 2022-06-08 08:55:50.199536
+Time: 1654649750.1995356
+
+End training
+Timestamp: 2022-06-08 16:00:06.228003
+Time: 1654675206.228003
+
+Training duration: 25456.028467416763 seconds
+        
